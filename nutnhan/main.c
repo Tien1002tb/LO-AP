@@ -32,10 +32,10 @@ int main(){
 	lcd_i2c_init(1);
 	DHT11_Init();
 	gpio_Init();
-while(1){
+	while(1){
 		mainmenu();
 		Setting();
-}
+	}
 }
 void gpio_Init(void){
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
@@ -51,7 +51,6 @@ void gpio_Init(void){
 	GPIO_Init(GPIOA,&GPIO_Structure);	
 }
 void mainmenu(void){
-	gpio_Init();
 	while(1){
 	 u8 last_button_state;
 	 uint8_t button_state_ok = GPIO_ReadInputDataBit(GPIO_PORT, OK);
@@ -63,7 +62,9 @@ void mainmenu(void){
             if (congtru_tong >= 3) {
                 congtru_tong = 3;
             }
-           
+           lcd_i2c_cmd(1, 0x01); // Clear Display
+            DelayMs(100); // Delay for debounce
+						state();
         }
 
         if (button_state_back == 0 && last_button_state == 1) {
@@ -71,28 +72,37 @@ void mainmenu(void){
             if (congtru_tong <= 0) {
                 congtru_tong = 0;
             } 
+						lcd_i2c_cmd(1, 0x01); // Clear Display
+            DelayMs(100); // Delay for debounce
+						state();
         }
         last_button_state = button_state_ok | button_state_back;
-	
+			}
+		}
+
+void state(void){
 	switch(congtru_tong){
 		case 0:
+//			lcd_i2c_cmd(1, 0x01); // Clear Display
 			lcd_i2c_msg(1 ,1, 0, "MAN HINH CHINH");
 			lcd_i2c_msg(1 ,2, 0, ">TIEP");	
 			break;
 		case 1:
+//			lcd_i2c_cmd(1, 0x01); // Clear Display
 			mannhietdo();
 		break;
 		case 2:
+//			lcd_i2c_cmd(1, 0x01); // Clear Display
 			mansetting1();
 		break;
-		case 3:			
+		case 3:	
+//			lcd_i2c_cmd(1, 0x01); // Clear Display			
 			mansetting2();
 		break;
 		default:
 			break;
 		}
 	}
-}
 void mannhietdo(void){
 	sprintf(Temp1 ,"T:%u *C",TCI);
 	lcd_i2c_msg(1 ,1, 0, Temp1);
@@ -118,7 +128,7 @@ void mansetting2(void){
 	
 }
 void Setting(void){
-	gpio_Init();
+
 	while(1){
 	if (congtru_tong == 2){
 		if (GPIO_ReadInputDataBit(GPIO_PORT, CONG) == 0){ // nut tang nhiet do 
