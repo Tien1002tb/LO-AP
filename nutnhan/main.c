@@ -11,14 +11,13 @@
 #define CONG GPIO_Pin_3
 #define TRU GPIO_Pin_4
 #define OK GPIO_Pin_5
-#define BACK GPIO_Pin_6
 GPIO_InitTypeDef GPIO_Structure; 
-int congtru_tong = 0;
-int tong;
+int congtru_tong =0 ;
 uint8_t RHI = 0,RHD = 0 , TCI = 0, TCD = 0;
 u8 RHI_set = 0, TCI_set = 0;
-char Temp1[20], Temp2[20];
-char Humi1[20], Humi2[20];
+int count = 0;
+char Temp1[20], Temp2[20],Temp3[20];
+char Humi1[20], Humi2[20],Humi3[20];
 void state(void);
 void gpio_Init(void);
 void mainmenu(void);
@@ -34,7 +33,6 @@ int main(){
 	gpio_Init();
 	while(1){
 		mainmenu();
-		Setting();
 	}
 }
 void gpio_Init(void){
@@ -45,64 +43,48 @@ void gpio_Init(void){
 	GPIO_Structure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOA,&GPIO_Structure);	
 	
-	GPIO_Structure.GPIO_Pin = CONG | TRU | OK | BACK; // nut
+	GPIO_Structure.GPIO_Pin = CONG | TRU | OK ; // nut
 	GPIO_Structure.GPIO_Mode = GPIO_Mode_IPU;
 	GPIO_Structure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOA,&GPIO_Structure);	
 }
-void mainmenu(void){
-	while(1){
-	 u8 last_button_state;
-	 uint8_t button_state_ok = GPIO_ReadInputDataBit(GPIO_PORT, OK);
-   uint8_t button_state_back = GPIO_ReadInputDataBit(GPIO_PORT, BACK);
 
-        if (button_state_ok == 0 && last_button_state == 1) {
-            congtru_tong = congtru_tong + 1;
+
+	
+void mainmenu(void){
+	uint8_t button_state_ok = 1 ;
+		uint8_t last_button_state_1 ;
+	while(1){
+	
+		last_button_state_1 = button_state_ok;
+		
+	  button_state_ok = GPIO_ReadInputDataBit(GPIO_PORT, OK);
+
 					
-            if (congtru_tong >= 3) {
-                congtru_tong = 3;
-            }
+        if (button_state_ok == 0 && last_button_state_1 == 1) {
+						congtru_tong ++;			
+            if (congtru_tong == 3) {
+                congtru_tong = 0;
+            }					
            lcd_i2c_cmd(1, 0x01); // Clear Display
             DelayMs(100); // Delay for debounce
-						state();
-        }
-
-        if (button_state_back == 0 && last_button_state == 1) {
-            congtru_tong = congtru_tong - 1;
-            if (congtru_tong <= 0) {
-                congtru_tong = 0;
-            } 
-						lcd_i2c_cmd(1, 0x01); // Clear Display
-            DelayMs(100); // Delay for debounce
-						state();
-        }
-        last_button_state = button_state_ok | button_state_back;
-			}
+					}   
+				
+					if(congtru_tong == 0){
+									lcd_i2c_msg(1 ,1, 0, "MAN HINH CHINH");
+									lcd_i2c_msg(1 ,2, 0, ">TIEP");	
+				
+					}
+					else if(congtru_tong == 1){
+						mannhietdo();
+					
+					}
+					else if(congtru_tong == 2){
+						Setting();
+					}
+				}		
 		}
 
-void state(void){
-	switch(congtru_tong){
-		case 0:
-//			lcd_i2c_cmd(1, 0x01); // Clear Display
-			lcd_i2c_msg(1 ,1, 0, "MAN HINH CHINH");
-			lcd_i2c_msg(1 ,2, 0, ">TIEP");	
-			break;
-		case 1:
-//			lcd_i2c_cmd(1, 0x01); // Clear Display
-			mannhietdo();
-		break;
-		case 2:
-//			lcd_i2c_cmd(1, 0x01); // Clear Display
-			mansetting1();
-		break;
-		case 3:	
-//			lcd_i2c_cmd(1, 0x01); // Clear Display			
-			mansetting2();
-		break;
-		default:
-			break;
-		}
-	}
 void mannhietdo(void){
 	sprintf(Temp1 ,"T:%u *C",TCI);
 	lcd_i2c_msg(1 ,1, 0, Temp1);
@@ -111,52 +93,28 @@ void mannhietdo(void){
 	DelayMs(50);
 	}
 void mansetting1(void){
-
-	sprintf(Temp1 ,"SET >T:%u *C", TCI_set);
+	sprintf(Temp2 ,"SET >T:%u *C", TCI_set);
 	lcd_i2c_msg(1 ,1, 0, Temp2);
-	sprintf(Humi1 ,"H:%u %%",RHI_set);
+	sprintf(Humi2 ,"H:%u %%",RHI_set);
 	lcd_i2c_msg(1 ,2, 5, Humi2);
 	DelayMs(50);
 }
 
-void mansetting2(void){
-	sprintf(Temp1 ,"SET T:%u *C", TCI_set);
-	lcd_i2c_msg(1 ,1, 0, Temp2);
-	sprintf(Humi1 ,">H:%u %%",RHI_set);
-	lcd_i2c_msg(1 ,2, 5, Humi2);
-	DelayMs(50);
-	
-}
+
 void Setting(void){
-
-	while(1){
-	if (congtru_tong == 2){
-		if (GPIO_ReadInputDataBit(GPIO_PORT, CONG) == 0){ // nut tang nhiet do 
+		mansetting1();   
+		if (congtru_tong == 2 && GPIO_ReadInputDataBit(GPIO_PORT, CONG) == 0){ // nut tang nhiet do 
 				TCI_set = TCI_set + 1;
-					if (TCI_set == 90){
-							TCI_set = 90;
-					}
+					if (TCI_set >= 90){
+							TCI_set = 0;
+					}		
 			}
-		if (GPIO_ReadInputDataBit(GPIO_PORT, TRU) == 0){ // nut giam nhiet do 
+		else if (congtru_tong == 2 && GPIO_ReadInputDataBit(GPIO_PORT, TRU) == 0){ // nut giam nhiet do 
 				TCI_set = TCI_set - 1;
 					if (TCI_set == 0){
-						TCI_set = 0;
+						TCI_set = 90;
 					}
 			}
 		}
-	if(congtru_tong == 3){
-		if (GPIO_ReadInputDataBit(GPIO_PORT, CONG) == 0){ // nut tang do am
-				RHI_set = RHI_set + 1;
-					if (RHI_set == 100){
-						RHI_set = 100;
-					}
-			}
-		if (GPIO_ReadInputDataBit(GPIO_PORT, TRU) == 0){ // nut giam do am
-				RHI_set = RHI_set - 1;
-					if (RHI_set == 0){
-						RHI_set = 0;
-					}
-			}
-	}
-	}
-}
+	
+
