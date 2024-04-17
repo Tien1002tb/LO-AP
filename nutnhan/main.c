@@ -35,7 +35,6 @@ int main(){
 	
 	while(1){		
 		mainmenu();
-		active();
 	}
 }
 
@@ -117,16 +116,12 @@ void setting(void){
 						TCI_set = 90;
 					}
 			}
+		if (TCI < TCI_set){
+			GPIO_SetBits(GPIO_PORT, DEN);
+			GPIO_ResetBits(GPIO_PORT, QUAT);
 		}
-	
-void active(void){
-	DHT11_Read_Data(&RHI, &RHD, &TCI, &TCD);
-	if (TCI < TCI_set){
-		GPIO_SetBits(GPIO_PORT, DEN);
-		GPIO_ResetBits(GPIO_PORT, QUAT);
-	}
 	else if (TCI > TCI_set){
-		GPIO_ResetBits (GPIO_PORT, DEN);
-		GPIO_SetBits (GPIO_PORT, QUAT);
-	}
+			GPIO_ResetBits (GPIO_PORT, DEN);
+			GPIO_SetBits (GPIO_PORT, QUAT);
+		}
 }
