@@ -79,8 +79,8 @@ void mainmenu(void *p){
 					}   
 				
 				if(congtru_tong == 0){
-							lcd_i2c_msg(1 ,1, 0, "MAN HINH CHINH");
-							lcd_i2c_msg(1 ,2, 0, ">TIEP");				
+							lcd_i2c_msg(1 ,1, 0, " MAN HINH CHINH");
+							lcd_i2c_msg(1 ,2, 3, "PRESS OK >>");				
 					}
 						else if(congtru_tong == 1){
 							mannhietdo();		
@@ -97,7 +97,7 @@ void mannhietdo(void){
 		humi = RHI + (float)RHD / 100;
 		sprintf(Temp1 ,"T:%.2f *C", temp); 
 		lcd_i2c_msg(1 ,1, 0, Temp1);
-		sprintf(Humi1 ,"H:%.2f %% >" ,humi);
+		sprintf(Humi1 ,"H:%.2f %%  OK >>" ,humi);
 		lcd_i2c_msg(1 ,2, 0, Humi1);
 		DelayMs(50);
 		
