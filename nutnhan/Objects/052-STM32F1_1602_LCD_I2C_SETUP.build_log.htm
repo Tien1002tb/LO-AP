@@ -22,39 +22,43 @@ Dialog DLL:      TCM.DLL V1.46.0.0
  
 <h2>Project:</h2>
 D:\Github\nut_nhan\nutnhan\052-STM32F1_1602_LCD_I2C_SETUP.uvprojx
-Project File Date:  04/18/2024
+Project File Date:  04/24/2024
 
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 6 (build 750)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
 Rebuild target 'Target 1'
-compiling systick_time.c...
 compiling PCF8574_drive.c...
-compiling lcd_1602_drive.c...
-compiling main.c...
-compiling i2c_drive.c...
 compiling dht11.c...
 compiling gp_drive.c...
-compiling misc.c...
-compiling os_systick.c...
-assembling startup_stm32f10x_md.s...
-compiling stm32f10x_gpio.c...
-compiling stm32f10x_i2c.c...
+compiling systick_time.c...
+compiling main.c...
+compiling lcd_1602_drive.c...
+compiling delay.c...
+compiling step.c...
+compiling sys.c...
+compiling i2c_drive.c...
 compiling clib_arm.c...
-compiling stm32f10x_rcc.c...
+compiling os_systick.c...
 compiling cmsis_os2.c...
+assembling startup_stm32f10x_md.s...
+compiling misc.c...
+compiling stm32f10x_rcc.c...
+compiling stm32f10x_i2c.c...
+compiling stm32f10x_gpio.c...
 compiling system_stm32f10x.c...
-compiling croutine.c...
+compiling stm32f10x_usart.c...
 compiling freertos_evr.c...
-compiling list.c...
+compiling croutine.c...
 compiling event_groups.c...
-compiling heap_4.c...
+compiling list.c...
 compiling port.c...
+compiling heap_4.c...
 compiling queue.c...
 compiling stream_buffer.c...
 compiling timers.c...
 compiling tasks.c...
 linking...
-Program Size: Code=18440 RO-data=444 RW-data=172 ZI-data=13300  
+Program Size: Code=20000 RO-data=444 RW-data=216 ZI-data=13496  
 ".\Objects\052-STM32F1_1602_LCD_I2C_SETUP.axf" - 0 Error(s), 0 Warning(s).
 
 <h2>Software Packages used:</h2>
@@ -88,6 +92,7 @@ Package Vendor: Keil
    * Component: GPIO Version: 3.6.0
    * Component: I2C Version: 3.6.0
    * Component: RCC Version: 3.6.0
+   * Component: USART Version: 3.6.0
 
 <h2>Collection of Component include folders:</h2>
   .\RTE\Device\STM32F103C8
@@ -110,19 +115,19 @@ Package Vendor: Keil
       Include file:  CMSIS\RTOS2\FreeRTOS\Config\ARMCM\FreeRTOSConfig.h
 
    * Component: ARM.FreeRTOS::RTOS:Core:Cortex-M:10.4.6
-      Source file:   Source\tasks.c
-      Source file:   Source\queue.c
-      Source file:   Source\portable\RVDS\ARM_CM3\port.c
-      Include file:  Source\include\FreeRTOS.h
-      Include file:  Source\include\queue.h
       Include file:  Source\include\semphr.h
-      Source file:   Source\list.c
       Include file:  Source\include\task.h
+      Source file:   Source\queue.c
+      Include file:  Source\include\queue.h
+      Source file:   Source\list.c
+      Source file:   Source\portable\RVDS\ARM_CM3\port.c
+      Source file:   Source\tasks.c
+      Include file:  Source\include\FreeRTOS.h
       Source file:   CMSIS\RTOS2\FreeRTOS\Source\freertos_evr.c
 
    * Component: ARM.FreeRTOS::RTOS:Coroutines:10.4.6
-      Source file:   Source\croutine.c
       Include file:  Source\include\croutine.h
+      Source file:   Source\croutine.c
 
    * Component: ARM.FreeRTOS::RTOS:Event Groups:10.4.6
       Include file:  Source\include\event_groups.h
@@ -132,33 +137,33 @@ Package Vendor: Keil
       Source file:   Source\portable\MemMang\heap_4.c
 
    * Component: ARM.FreeRTOS::RTOS:Message Buffer:10.4.6
-      Source file:   Source\stream_buffer.c
       Include file:  Source\include\message_buffer.h
+      Source file:   Source\stream_buffer.c
 
    * Component: ARM.FreeRTOS::RTOS:Timers:10.4.6
-      Source file:   Source\timers.c
       Include file:  Source\include\timers.h
+      Source file:   Source\timers.c
 
    * Component: ARM::CMSIS:CORE:5.5.0
 
    * Component: ARM::CMSIS:RTOS2:FreeRTOS:Cortex-M:10.4.6
-      Include file:  CMSIS\RTOS2\FreeRTOS\Include\freertos_mpool.h
-      Source file:   CMSIS\RTOS2\FreeRTOS\Source\ARM\clib_arm.c
       Source file:   CMSIS\RTOS2\FreeRTOS\Source\cmsis_os2.c
+      Include file:  CMSIS\RTOS2\FreeRTOS\Include\freertos_mpool.h
       Source file:   CMSIS\RTOS2\FreeRTOS\Source\os_systick.c
+      Source file:   CMSIS\RTOS2\FreeRTOS\Source\ARM\clib_arm.c
 
    * Component: Keil::Device:Startup:1.0.0
-      Source file:   Device\Source\system_stm32f10x.c
-      Include file:  RTE_Driver\Config\RTE_Device.h
       Source file:   Device\Source\ARM\STM32F1xx_OPT.s
       Source file:   Device\Source\ARM\startup_stm32f10x_md.s
+      Include file:  RTE_Driver\Config\RTE_Device.h
+      Source file:   Device\Source\system_stm32f10x.c
 
    * Component: Keil::Device:StdPeriph Drivers:Framework:3.6.0
-      Include file:  Device\StdPeriph_Driver\inc\misc.h
       Source file:   Device\StdPeriph_Driver\templates\stm32f10x_conf.h
+      Include file:  Device\StdPeriph_Driver\templates\stm32f10x_it.h
       Source file:   Device\StdPeriph_Driver\templates\stm32f10x_it.c
       Source file:   Device\StdPeriph_Driver\src\misc.c
-      Include file:  Device\StdPeriph_Driver\templates\stm32f10x_it.h
+      Include file:  Device\StdPeriph_Driver\inc\misc.h
 
    * Component: Keil::Device:StdPeriph Drivers:GPIO:3.6.0
       Include file:  Device\StdPeriph_Driver\inc\stm32f10x_gpio.h
@@ -171,6 +176,10 @@ Package Vendor: Keil
    * Component: Keil::Device:StdPeriph Drivers:RCC:3.6.0
       Include file:  Device\StdPeriph_Driver\inc\stm32f10x_rcc.h
       Source file:   Device\StdPeriph_Driver\src\stm32f10x_rcc.c
+
+   * Component: Keil::Device:StdPeriph Drivers:USART:3.6.0
+      Include file:  Device\StdPeriph_Driver\inc\stm32f10x_usart.h
+      Source file:   Device\StdPeriph_Driver\src\stm32f10x_usart.c
 Build Time Elapsed:  00:00:03
 </pre>
 </body>

@@ -12,5 +12,6 @@
 .\objects\systick_time.o: C:\Users\ASUS\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.4.1\Device\Include\stm32f10x.h
 .\objects\systick_time.o: C:\Users\ASUS\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.4.1\Device\StdPeriph_Driver\inc\stm32f10x_i2c.h
 .\objects\systick_time.o: C:\Users\ASUS\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.4.1\Device\StdPeriph_Driver\inc\stm32f10x_rcc.h
+.\objects\systick_time.o: C:\Users\ASUS\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.4.1\Device\StdPeriph_Driver\inc\stm32f10x_usart.h
 .\objects\systick_time.o: C:\Users\ASUS\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.4.1\Device\StdPeriph_Driver\inc\misc.h
 .\objects\systick_time.o: systick_time.h

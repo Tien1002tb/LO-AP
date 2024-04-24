@@ -15,6 +15,7 @@
 .\objects\lcd_1602_drive.o: C:\Users\ASUS\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.4.1\Device\Include\stm32f10x.h
 .\objects\lcd_1602_drive.o: C:\Users\ASUS\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.4.1\Device\StdPeriph_Driver\inc\stm32f10x_i2c.h
 .\objects\lcd_1602_drive.o: C:\Users\ASUS\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.4.1\Device\StdPeriph_Driver\inc\stm32f10x_rcc.h
+.\objects\lcd_1602_drive.o: C:\Users\ASUS\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.4.1\Device\StdPeriph_Driver\inc\stm32f10x_usart.h
 .\objects\lcd_1602_drive.o: C:\Users\ASUS\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.4.1\Device\StdPeriph_Driver\inc\misc.h
 .\objects\lcd_1602_drive.o: PCF8574_drive.h
 .\objects\lcd_1602_drive.o: i2c_drive.h
