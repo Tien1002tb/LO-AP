@@ -23,9 +23,10 @@ int count = 0;
 char Temp1[20], Temp2[20],Temp3[20];
 char Humi1[20], Humi2[20],Humi3[20];
 float temp , humi;
+int t_dongco = 0 ;
 
-char 	vrc_Getc , vri_stt = 0;
-char vrc_res[100];
+char vrc_Getc , vri_stt = 0;
+char vrc_Res[100];
 int vri_count = 0;
 
 char  data[100];
@@ -40,6 +41,8 @@ void mannhietdo(void);
 void mansetting1(void);
 void mansetting2(void);
 void setting(void);
+void dongco(void*p);
+
 void uart_SendStr(char *str);
 void USART1_IRQHandler(void);
 void uart_Init(void);
@@ -49,8 +52,9 @@ void mainmenu(void *p);
 //void daotrung(void *p );
 
 int main(){
-	xTaskCreate(mainmenu, (const char*)"USER",128 , NULL, 1, NULL);	
-	xTaskCreate(truyen_nhan , (const char*)"USER",128 , NULL, 1, NULL);	
+	xTaskCreate(mainmenu, (const char*)"USER",128 , NULL, 3, NULL);	
+	xTaskCreate(truyen_nhan , (const char*)"UART ESP32-STM32",128 , NULL, 2, NULL);	
+	xTaskCreate(dongco, (const char*)"DONG CO DAO TRUNG",128 , NULL, 0, NULL);	
 	vTaskStartScheduler(); 
 	while(1){		
 	}
@@ -143,6 +147,23 @@ void setting(void){
 			GPIO_SetBits (GPIO_PORT, QUAT);
 		}
 }
+
+void dongco(void*p){
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+	GPIO_Structure.GPIO_Pin = GPIO_Pin_6;
+	GPIO_Structure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_Structure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOA,&GPIO_Structure);	
+	while(1){
+		if( t_dongco != 0){		
+	GPIO_SetBits(GPIOA, GPIO_Pin_6);
+	delayMs(5*60000);
+	GPIO_ResetBits(GPIOA, GPIO_Pin_6);
+	delayMs(t_dongco*60000);
+		}
+	}
+}
+
 //UART truyen nhan data
 
 void truyen_nhan(void *p){
@@ -168,6 +189,7 @@ uint16_t UARTx_Getc(USART_TypeDef* USARTx){
 }
 
 void USART1_IRQHandler(void) {
+
  if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) {
         vrc_Getc = UARTx_Getc(USART1);	
 				if(vrc_Getc == 'T'){
@@ -178,21 +200,29 @@ void USART1_IRQHandler(void) {
 					vri_stt = 2;
 				}
 				else{
-					vrc_res[vri_count] = vrc_Getc;
+					vrc_Res[vri_count] = vrc_Getc;
 					vri_count++;
 					
 				}
 				if(vri_stt == 1){
-					uart_SendStr(vrc_res);
-					vrc_res[vri_count] = NULL;
+					uart_SendStr(vrc_Res);
+					vrc_Res[vri_count] = NULL;
+					if(vrc_Res[0] != NULL){
+						sscanf(vrc_Res, "%2f", &TCI_set);	
+					}
 					vri_count = 0;
 					vri_stt = 0;
+					memset(vrc_Res, 0, sizeof(vrc_Res));
 				}
 				if(vri_stt == 2){
-					uart_SendStr(vrc_res);
-					vrc_res[vri_count] = NULL;
+					uart_SendStr(vrc_Res);
+					vrc_Res[vri_count] = NULL;
+					if(vrc_Res[0] != NULL){
+						sscanf(vrc_Res, "%d", &t_dongco);	
+					}
 					vri_count = 0;
 					vri_stt = 0;
+					memset(vrc_Res, 0, sizeof(vrc_Res));
 				}
 				
 		}
