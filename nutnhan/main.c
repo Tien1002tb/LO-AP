@@ -8,6 +8,8 @@
 #include "stm32f10x.h"                  // Device header
 #include "stm32f10x_gpio.h"             // Keil::Device:StdPeriph Drivers:GPIO
 #include "stdio.h"
+#include "queue.h"                      // ARM.FreeRTOS::RTOS:Core
+
 
 #define GPIO_PORT GPIOA
 #define DEN  GPIO_Pin_2
@@ -22,7 +24,12 @@ float RHI_set = 50.00, TCI_set = 50.00;
 int count = 0;
 char Temp1[20], Temp2[20],Temp3[20];
 char Humi1[20], Humi2[20],Humi3[20];
-float temp , humi;
+	typedef struct {
+    float temp;
+    float humi;
+} SensorData;
+
+float receivetemp;
 int t_dongco = 0 ;
 
 char vrc_Getc , vri_stt = 0;
@@ -30,7 +37,7 @@ char vrc_Res[100];
 int vri_count = 0;
 
 char  data[100];
-int  lux = 1, fan_A = 1, fan_B = 1, motor = 1;
+int  lamp = 1, fan_A = 1, fan_B = 1, motor = 1;
 
 void delayMs(uint32_t ms);
 void uart_Init(void);
@@ -41,20 +48,34 @@ void mannhietdo(void);
 void mansetting1(void);
 void mansetting2(void);
 void setting(void);
-void dongco(void*p);
+
 
 void uart_SendStr(char *str);
 void USART1_IRQHandler(void);
 void uart_Init(void);
 
+void dongco(void*p);
 void truyen_nhan(void *p);
 void mainmenu(void *p);
-//void daotrung(void *p );
+void docnhietdo(void *p);
+
+SensorData sensorreceive1;
+SensorData sensorreceive2;
+SensorData sensor2_data;
+SensorData sensor1_data;
+
+
+xQueueHandle displayQueue,uartQueue;
 
 int main(){
+	displayQueue = xQueueCreate( 128, sizeof( float ) );
+	uartQueue = xQueueCreate(128, sizeof(float));
+	SystemInit();
+	SystemCoreClockUpdate();
 	xTaskCreate(mainmenu, (const char*)"USER",128 , NULL, 3, NULL);	
 	xTaskCreate(truyen_nhan , (const char*)"UART ESP32-STM32",128 , NULL, 2, NULL);	
 	xTaskCreate(dongco, (const char*)"DONG CO DAO TRUNG",128 , NULL, 0, NULL);	
+	xTaskCreate(docnhietdo, (const char*)"DONG CO DAO TRUNG",128 , NULL, 1, NULL);	
 	vTaskStartScheduler(); 
 	while(1){		
 	}
@@ -76,12 +97,16 @@ void gpio_Init(void){
 
 void mainmenu(void *p){
 	systick_init();
-	DHT11_Init();
 	gpio_Init();
 	lcd_i2c_init(1);
 	uint8_t button_state_ok = 1 ;
 	uint8_t last_button_state_1 ;
-	while(1){	
+	while(1){		
+		if(xQueueReceive(uartQueue, (void*)&sensorreceive2,(portTickType)0xFFFFFFFF)){
+				sprintf(Temp1 ,"T:%.2f *C",sensorreceive2.temp); 
+				sprintf(Humi1 ,"H:%.2f %%  OK >>" ,sensorreceive2.humi);
+				receivetemp = sensorreceive2.temp;
+		}	
 		last_button_state_1 = button_state_ok;
 	  button_state_ok = GPIO_ReadInputDataBit(GPIO_PORT, OK);				
         if (button_state_ok == 0 && last_button_state_1 == 1) {
@@ -91,8 +116,7 @@ void mainmenu(void *p){
             }					
 							lcd_i2c_cmd(1, 0x01); // Clear Display
 							DelayMs(100); // Delay for debounce									
-					}   
-				
+					}   			
 				if(congtru_tong == 0){
 							lcd_i2c_msg(1 ,1, 0, " MAN HINH CHINH");
 							lcd_i2c_msg(1 ,2, 3, "PRESS OK >>");				
@@ -103,18 +127,13 @@ void mainmenu(void *p){
 						else if(congtru_tong == 2){
 							setting();
 					}
-				}	
+				}
+			
 		}
 
 void mannhietdo(void){
-		DHT11_Read_Data(&RHI, &RHD, &TCI, &TCD);
-		temp = TCI + (float)TCD / 100;
-		humi = RHI + (float)RHD / 100;
-		sprintf(Temp1 ,"T:%.2f *C", temp); 
 		lcd_i2c_msg(1 ,1, 0, Temp1);
-		sprintf(Humi1 ,"H:%.2f %%  OK >>" ,humi);
-		lcd_i2c_msg(1 ,2, 0, Humi1);
-		DelayMs(50);		
+		lcd_i2c_msg(1 ,2, 0, Humi1);		
 	}
 void mansetting1(void){
 		sprintf(Temp2 ,"SET >T:%.2f  ", TCI_set);
@@ -138,28 +157,46 @@ void setting(void){
 						TCI_set = 90;
 					}
 			}
-		if (temp < TCI_set){
+		if (receivetemp < TCI_set){
 			GPIO_SetBits(GPIO_PORT, DEN);
 			GPIO_ResetBits(GPIO_PORT, QUAT);
+			lamp =1;
+			fan_A=0;
 		}
-	else if (temp > TCI_set){
+	else if (receivetemp > TCI_set){
 			GPIO_ResetBits (GPIO_PORT, DEN);
 			GPIO_SetBits (GPIO_PORT, QUAT);
+			lamp =0;
+			fan_A=1;
 		}
 }
 
-void dongco(void*p){
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
-	GPIO_Structure.GPIO_Pin = GPIO_Pin_6;
-	GPIO_Structure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Structure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(GPIOA,&GPIO_Structure);	
+void docnhietdo(void *p){
+DHT11_Init();
 	while(1){
-		if( t_dongco != 0){		
-	GPIO_SetBits(GPIOA, GPIO_Pin_6);
-	delayMs(5*60000);
-	GPIO_ResetBits(GPIOA, GPIO_Pin_6);
-	delayMs(t_dongco*60000);
+		DHT11_Read_Data(&RHI, &RHD, &TCI, &TCD);
+		sensor1_data.temp = sensor2_data.temp  = TCI + (float)TCD / 100;
+		sensor1_data.humi = sensor2_data.humi  = TCI + (float)TCD / 100;
+		xQueueSend(uartQueue, (void*)&sensor1_data, (portTickType)0)	;
+		xQueueSend(displayQueue, (void*)&sensor2_data, (portTickType)0)	;	
+		delayMs(500);
+	}
+}
+
+void dongco(void*p){
+  	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+	  GPIO_Structure.GPIO_Pin = GPIO_Pin_6;
+	  GPIO_Structure.GPIO_Mode = GPIO_Mode_Out_PP;
+	  GPIO_Structure.GPIO_Speed = GPIO_Speed_50MHz;
+  	GPIO_Init(GPIOA,&GPIO_Structure);	
+	  while(1){
+		   if( t_dongco != 0){		
+	       GPIO_SetBits(GPIOA, GPIO_Pin_6);
+				 motor = 1;
+	       delayMs(5*60000);			
+	       GPIO_ResetBits(GPIOA, GPIO_Pin_6);
+				 motor = 0;
+	       delayMs(t_dongco*60000);
 		}
 	}
 }
@@ -168,9 +205,13 @@ void dongco(void*p){
 
 void truyen_nhan(void *p){
 	uart_Init();
-	sprintf(data, "%.2f-%.2f-%d-%d-%d-%d\n", temp, humi, lux, fan_A, fan_B, motor);
-	uart_SendStr(data);
-	delayMs(1000);	
+	while(1){
+		if(xQueueReceive(uartQueue, (void*)&sensorreceive1,(portTickType)0xFFFFFFFF)){
+		sprintf(data, "%.2f-%.2f-%d-%d-%d-%d\n", sensorreceive1.temp, sensorreceive1.humi, lamp, fan_A, fan_B, motor);
+		uart_SendStr(data);
+		}
+	delayMs(100);	
+	}
 }
 
 void uart_SendChar(char _chr){
@@ -208,7 +249,7 @@ void USART1_IRQHandler(void) {
 					uart_SendStr(vrc_Res);
 					vrc_Res[vri_count] = NULL;
 					if(vrc_Res[0] != NULL){
-						sscanf(vrc_Res, "%2f", &TCI_set);	
+						sscanf(vrc_Res, "%f", &TCI_set);	
 					}
 					vri_count = 0;
 					vri_stt = 0;

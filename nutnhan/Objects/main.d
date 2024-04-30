@@ -38,3 +38,4 @@
 .\objects\main.o: dht11.h
 .\objects\main.o: systick_time.h
 .\objects\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+.\objects\main.o: C:\Users\ASUS\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\10.4.6\Source\include\queue.h
