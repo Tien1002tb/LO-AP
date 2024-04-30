@@ -10,7 +10,6 @@
 #include "stdio.h"
 #include "queue.h"                      // ARM.FreeRTOS::RTOS:Core
 
-
 #define GPIO_PORT GPIOA
 #define DEN  GPIO_Pin_2
 #define QUAT GPIO_Pin_1
@@ -20,15 +19,12 @@
 GPIO_InitTypeDef GPIO_Structure; 
 int congtru_tong =0 ;
 uint8_t RHI = 0,RHD = 0 , TCI = 0, TCD = 0;
-float RHI_set = 50.00, TCI_set = 50.00;
+float RHI_set = 70.00, TCI_set = 30.00;
 int count = 0;
 char Temp1[20], Temp2[20];
 char Humi1[20];
-
-float temp, tempreceive, temp_receive;
-float humi, humireceive, humi_receive;
-float tempreceive1 , humireceive1;
-float tempreceive2 , humireceive2;
+float temp;
+float humi;
 int t_dongco = 0 ;
 
 char vrc_Getc , vri_stt = 0;
@@ -47,7 +43,7 @@ void mannhietdo(void);
 void mansetting1(void);
 void mansetting2(void);
 void setting(void);
-
+void docnhietdo(void );
 
 void uart_SendStr(char *str);
 void USART1_IRQHandler(void);
@@ -56,22 +52,13 @@ void uart_Init(void);
 void dongco(void*p);
 void truyen_nhan(void *p);
 void mainmenu(void *p);
-void docnhietdo(void *p);
-
-
-
-
-xQueueHandle tempQueue, humiQueue;
 
 int main(){
-	tempQueue = xQueueCreate( 20, sizeof(float));
-	humiQueue = xQueueCreate(20, sizeof(float));
 	SystemInit();
 	SystemCoreClockUpdate();
 	xTaskCreate(mainmenu, (const char*)"USER",128 , NULL, 3, NULL);	
 	xTaskCreate(truyen_nhan , (const char*)"UART ESP32-STM32",128 , NULL, 2, NULL);	
-	xTaskCreate(dongco, (const char*)"DONG CO DAO TRUNG",128 , NULL, 1, NULL);	
-	xTaskCreate(docnhietdo, (const char*)"DONG CO DAO TRUNG",128 , NULL, 2, NULL);	
+	xTaskCreate(dongco, (const char*)"DONG CO DAO TRUNG",128 , NULL, 1, NULL);		
 	vTaskStartScheduler(); 
 	while(1){		
 	}
@@ -91,19 +78,23 @@ void gpio_Init(void){
 	GPIO_Init(GPIOA,&GPIO_Structure);	
 }
 
+void docnhietdo(void){
+		DHT11_Read_Data(&RHI, &RHD, &TCI, &TCD);
+		temp = TCI + (float)TCD / 100;
+		humi = RHI + (float)RHD / 100;	
+		delayMs(100);
+}
 void mainmenu(void *p){
 	systick_init();
+	DHT11_Init();
 	gpio_Init();
 	lcd_i2c_init(1);
 	uint8_t button_state_ok = 1 ;
 	uint8_t last_button_state_1 ;
 	while(1){		
-		if(xQueueReceive(tempQueue, (void*)&temp_receive,(portTickType)0xFFFFFFFF)){
-				sprintf(Temp1 ,"T:%.2f *C",temp_receive); 
-		}
-			if(xQueueReceive(humiQueue, (void*)&humi_receive,(portTickType)0xFFFFFFFF)){
-				sprintf(Humi1 ,"H:%.2f %%  OK >>" ,humi_receive);
-		}	
+		docnhietdo();
+		sprintf(Temp1 ,"T:%.2f *C",temp); 
+		sprintf(Humi1 ,"H:%.2f %%  OK >>" ,humi);
 		last_button_state_1 = button_state_ok;
 	  button_state_ok = GPIO_ReadInputDataBit(GPIO_PORT, OK);				
         if (button_state_ok == 0 && last_button_state_1 == 1) {
@@ -154,13 +145,13 @@ void setting(void){
 						TCI_set = 90;
 					}
 			}
-		if (temp_receive < TCI_set){
+		if (temp < TCI_set){
 			GPIO_SetBits(GPIO_PORT, DEN);
 			GPIO_ResetBits(GPIO_PORT, QUAT);
 			lamp =1;
 			fan_A=0;
 		}
-	else if (temp_receive > TCI_set){
+	else if (temp > TCI_set){
 			GPIO_ResetBits (GPIO_PORT, DEN);
 			GPIO_SetBits (GPIO_PORT, QUAT);
 			lamp =0;
@@ -168,17 +159,6 @@ void setting(void){
 		}
 }
 
-void docnhietdo(void *p){
-DHT11_Init();
-	while(1){
-		DHT11_Read_Data(&RHI, &RHD, &TCI, &TCD);
-		temp = TCI + (float)TCD / 100;
-		humi = RHI + (float)RHD / 100;
-		xQueueSend(tempQueue, (void*)&temp, (portTickType)0)	;
-		xQueueSend(humiQueue, (void*)&humi, (portTickType)0)	;	
-		delayMs(100);
-	}
-}
 
 void dongco(void*p){
   	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
@@ -201,14 +181,13 @@ void dongco(void*p){
 //UART truyen nhan data
 
 void truyen_nhan(void *p){
+	DHT11_Init();
 	uart_Init();
 	while(1){
-		tempreceive1 = xQueueReceive(tempQueue, (void*)&tempreceive,(portTickType)0xFFFFFFFF);
-		humireceive1 = xQueueReceive(humiQueue, (void*)&humireceive,(portTickType)0xFFFFFFFF);
-		sprintf(data, "%.2f-%.2f-%d-%d-%d-%d\n", tempreceive1, humireceive1, lamp, fan_A, fan_B, motor);
-		uart_SendStr(data);
-		
-	delayMs(100);	
+		docnhietdo();
+		sprintf(data, "%.2f-%.2f-%d-%d-%d-%d\n", temp, humi, lamp, fan_A, fan_B, motor);
+		uart_SendStr(data);	
+		delayMs(100);	
 	}
 }
 
@@ -228,20 +207,17 @@ uint16_t UARTx_Getc(USART_TypeDef* USARTx){
 }
 
 void USART1_IRQHandler(void) {
-
  if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) {
         vrc_Getc = UARTx_Getc(USART1);	
 				if(vrc_Getc == 'T'){
 					vri_stt = 1;
-
 				}
 				if(vrc_Getc == 'M'){
 					vri_stt = 2;
 				}
 				else{
 					vrc_Res[vri_count] = vrc_Getc;
-					vri_count++;
-					
+					vri_count++;			
 				}
 				if(vri_stt == 1){
 					uart_SendStr(vrc_Res);
