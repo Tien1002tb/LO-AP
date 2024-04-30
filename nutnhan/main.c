@@ -22,14 +22,13 @@ int congtru_tong =0 ;
 uint8_t RHI = 0,RHD = 0 , TCI = 0, TCD = 0;
 float RHI_set = 50.00, TCI_set = 50.00;
 int count = 0;
-char Temp1[20], Temp2[20],Temp3[20];
-char Humi1[20], Humi2[20],Humi3[20];
-	typedef struct {
-    float temp;
-    float humi;
-} SensorData;
+char Temp1[20], Temp2[20];
+char Humi1[20];
 
-float receivetemp;
+float temp, tempreceive, temp_receive;
+float humi, humireceive, humi_receive;
+float tempreceive1 , humireceive1;
+float tempreceive2 , humireceive2;
 int t_dongco = 0 ;
 
 char vrc_Getc , vri_stt = 0;
@@ -59,23 +58,20 @@ void truyen_nhan(void *p);
 void mainmenu(void *p);
 void docnhietdo(void *p);
 
-SensorData sensorreceive1;
-SensorData sensorreceive2;
-SensorData sensor2_data;
-SensorData sensor1_data;
 
 
-xQueueHandle displayQueue,uartQueue;
+
+xQueueHandle tempQueue, humiQueue;
 
 int main(){
-	displayQueue = xQueueCreate( 128, sizeof( float ) );
-	uartQueue = xQueueCreate(128, sizeof(float));
+	tempQueue = xQueueCreate( 20, sizeof(float));
+	humiQueue = xQueueCreate(20, sizeof(float));
 	SystemInit();
 	SystemCoreClockUpdate();
 	xTaskCreate(mainmenu, (const char*)"USER",128 , NULL, 3, NULL);	
 	xTaskCreate(truyen_nhan , (const char*)"UART ESP32-STM32",128 , NULL, 2, NULL);	
-	xTaskCreate(dongco, (const char*)"DONG CO DAO TRUNG",128 , NULL, 0, NULL);	
-	xTaskCreate(docnhietdo, (const char*)"DONG CO DAO TRUNG",128 , NULL, 1, NULL);	
+	xTaskCreate(dongco, (const char*)"DONG CO DAO TRUNG",128 , NULL, 1, NULL);	
+	xTaskCreate(docnhietdo, (const char*)"DONG CO DAO TRUNG",128 , NULL, 2, NULL);	
 	vTaskStartScheduler(); 
 	while(1){		
 	}
@@ -102,10 +98,11 @@ void mainmenu(void *p){
 	uint8_t button_state_ok = 1 ;
 	uint8_t last_button_state_1 ;
 	while(1){		
-		if(xQueueReceive(uartQueue, (void*)&sensorreceive2,(portTickType)0xFFFFFFFF)){
-				sprintf(Temp1 ,"T:%.2f *C",sensorreceive2.temp); 
-				sprintf(Humi1 ,"H:%.2f %%  OK >>" ,sensorreceive2.humi);
-				receivetemp = sensorreceive2.temp;
+		if(xQueueReceive(tempQueue, (void*)&temp_receive,(portTickType)0xFFFFFFFF)){
+				sprintf(Temp1 ,"T:%.2f *C",temp_receive); 
+		}
+			if(xQueueReceive(humiQueue, (void*)&humi_receive,(portTickType)0xFFFFFFFF)){
+				sprintf(Humi1 ,"H:%.2f %%  OK >>" ,humi_receive);
 		}	
 		last_button_state_1 = button_state_ok;
 	  button_state_ok = GPIO_ReadInputDataBit(GPIO_PORT, OK);				
@@ -134,19 +131,19 @@ void mainmenu(void *p){
 void mannhietdo(void){
 		lcd_i2c_msg(1 ,1, 0, Temp1);
 		lcd_i2c_msg(1 ,2, 0, Humi1);		
+		DelayMs(50);
 	}
 void mansetting1(void){
 		sprintf(Temp2 ,"SET >T:%.2f  ", TCI_set);
 		lcd_i2c_msg(1 ,1, 0, Temp2);
 		lcd_i2c_msg(1 ,1, 13, "*C");
-		sprintf(Humi1 ,"H:%.2f %% " ,RHI_set);
 		lcd_i2c_msg(1 ,2, 5, Humi1);
 		DelayMs(50);
 }
 void setting(void){
 		mansetting1();   
 		if (congtru_tong == 2 && GPIO_ReadInputDataBit(GPIO_PORT, CONG) == 0){ // nut tang nhiet do 
-				TCI_set = TCI_set + 0.1;
+				TCI_set = TCI_set + 0.5;
 					if (TCI_set >= 90){
 							TCI_set = 0;
 					}		
@@ -157,13 +154,13 @@ void setting(void){
 						TCI_set = 90;
 					}
 			}
-		if (receivetemp < TCI_set){
+		if (temp_receive < TCI_set){
 			GPIO_SetBits(GPIO_PORT, DEN);
 			GPIO_ResetBits(GPIO_PORT, QUAT);
 			lamp =1;
 			fan_A=0;
 		}
-	else if (receivetemp > TCI_set){
+	else if (temp_receive > TCI_set){
 			GPIO_ResetBits (GPIO_PORT, DEN);
 			GPIO_SetBits (GPIO_PORT, QUAT);
 			lamp =0;
@@ -175,11 +172,11 @@ void docnhietdo(void *p){
 DHT11_Init();
 	while(1){
 		DHT11_Read_Data(&RHI, &RHD, &TCI, &TCD);
-		sensor1_data.temp = sensor2_data.temp  = TCI + (float)TCD / 100;
-		sensor1_data.humi = sensor2_data.humi  = TCI + (float)TCD / 100;
-		xQueueSend(uartQueue, (void*)&sensor1_data, (portTickType)0)	;
-		xQueueSend(displayQueue, (void*)&sensor2_data, (portTickType)0)	;	
-		delayMs(500);
+		temp = TCI + (float)TCD / 100;
+		humi = RHI + (float)RHD / 100;
+		xQueueSend(tempQueue, (void*)&temp, (portTickType)0)	;
+		xQueueSend(humiQueue, (void*)&humi, (portTickType)0)	;	
+		delayMs(100);
 	}
 }
 
@@ -206,10 +203,11 @@ void dongco(void*p){
 void truyen_nhan(void *p){
 	uart_Init();
 	while(1){
-		if(xQueueReceive(uartQueue, (void*)&sensorreceive1,(portTickType)0xFFFFFFFF)){
-		sprintf(data, "%.2f-%.2f-%d-%d-%d-%d\n", sensorreceive1.temp, sensorreceive1.humi, lamp, fan_A, fan_B, motor);
+		tempreceive1 = xQueueReceive(tempQueue, (void*)&tempreceive,(portTickType)0xFFFFFFFF);
+		humireceive1 = xQueueReceive(humiQueue, (void*)&humireceive,(portTickType)0xFFFFFFFF);
+		sprintf(data, "%.2f-%.2f-%d-%d-%d-%d\n", tempreceive1, humireceive1, lamp, fan_A, fan_B, motor);
 		uart_SendStr(data);
-		}
+		
 	delayMs(100);	
 	}
 }
